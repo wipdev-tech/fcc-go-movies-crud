@@ -37,8 +37,8 @@ func main() {
 	r.HandleFunc("/movies/{id}", updateMovie).Methods("PUT")
 	r.HandleFunc("/movie/{id}", deleteMovie).Methods("DELETE")
 
-	fmt.Println("Starting server at port 8000")
-	log.Fatal(http.ListenAndServe(":8000", r))
+	fmt.Println("Starting server at port 8080")
+	log.Fatal(http.ListenAndServe(":8080", r))
 }
 
 func getMovies(w http.ResponseWriter, r *http.Request) {
@@ -69,12 +69,35 @@ func getMovie(w http.ResponseWriter, r *http.Request) {
 }
 
 func createMovie(w http.ResponseWriter, r *http.Request) {
+	var m Movie
 	w.Header().Set("Content-Type", "application/json")
-	var movie Movie
-	_ = json.NewDecoder(r.Body).Decode(&movie)
-	movie.ID = strconv.Itoa(rand.Intn(100000000))
-	movies = append(movies, movie)
-	json.NewEncoder(w).Encode(movie)
+    fmt.Println(r.Body)
+
+    err := json.NewDecoder(r.Body).Decode(&m)
+    if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(
+			struct {
+				Message string `json:"message"`
+			}{Message: "Encoding error"},
+		)
+        return
+    }
+
+
+	if m.Isbn == "" || m.Title == "" || m.Director.Firstname == "" || m.Director.Lastname == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(
+			struct {
+				Message string `json:"message"`
+			}{Message: "Insufficient Data"},
+		)
+		return
+	}
+
+	m.ID = strconv.Itoa(rand.Intn(100000000))
+	movies = append(movies, m)
+	json.NewEncoder(w).Encode(m)
 }
 
 func updateMovie(w http.ResponseWriter, r *http.Request) {
@@ -91,7 +114,7 @@ func updateMovie(w http.ResponseWriter, r *http.Request) {
 			movies = append(movies, newMovie)
 			json.NewEncoder(w).Encode(newMovie)
 
-            return
+			return
 		}
 	}
 }
